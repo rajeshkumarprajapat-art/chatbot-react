@@ -7,6 +7,7 @@ interface Message {
   text: string
   isUser: boolean
   questionNumber?: number
+  isTyping?: boolean
 }
 
 export function Home() {
@@ -14,7 +15,19 @@ export function Home() {
   const [input, setInput] = useState('')
   const [questionCounter, setQuestionCounter] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
+  const [typingText, setTypingText] = useState('')
+  const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const handleCopy = async (messageId: number, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedMessageId(messageId)
+      setTimeout(() => setCopiedMessageId(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy text:', err)
+    }
+  }
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -49,11 +62,38 @@ export function Home() {
       
       const aiResponse: Message = {
         id: Date.now() + 1,
-        text: response.data.answer || "Sorry, I couldn't process your request.",
-        isUser: false
+        text: '',
+        isUser: false,
+        isTyping: true
       }
       setMessages(prev => [...prev, aiResponse])
       setIsLoading(false)
+      
+      // Typewriter effect
+      const fullText = response.data.answer || "Sorry, I couldn't process your request."
+      let currentIndex = 0
+      
+      const typeInterval = setInterval(() => {
+        if (currentIndex < fullText.length) {
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === aiResponse.id 
+                ? { ...msg, text: fullText.substring(0, currentIndex + 1) }
+                : msg
+            )
+          )
+          currentIndex++
+        } else {
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === aiResponse.id 
+                ? { ...msg, isTyping: false }
+                : msg
+            )
+          )
+          clearInterval(typeInterval)
+        }
+      }, 30)
     } catch (error) {
       console.error('API Error:', error)
       const errorResponse: Message = {
@@ -157,7 +197,25 @@ export function Home() {
                     <div className={`flex-1 leading-relaxed text-lg text-left ${
                       message.isUser ? 'text-gray-800 font-bold' : 'text-gray-800'
                     }`}>
-                      {message.text}
+                      <div className="group relative">
+                        {message.text}
+                        {message.isTyping && <span className="animate-pulse">|</span>}
+                        {!message.isUser && !message.isTyping && (
+                          <button 
+                            onClick={() => handleCopy(message.id, message.text)}
+                            className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200"
+                            title="Copy response"
+                          >
+                            {copiedMessageId === message.id ? (
+                              <span className="text-xs text-green-600 font-medium">Copied!</span>
+                            ) : (
+                              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
