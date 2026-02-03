@@ -54,8 +54,8 @@ export function Home() {
     setIsLoading(true)
 
     try {
-      const response = await axios.post('https://chatbot-node-lime.vercel.app/api/chat', {
-        question: userInput
+      const response = await axios.post('http://localhost:3000/api/chat', {
+        message: userInput
       })
 
       console.log('Resp -- ' + JSON.stringify(response));
@@ -70,7 +70,7 @@ export function Home() {
       setIsLoading(false)
       
       // Typewriter effect
-      const fullText = response.data.answer || "Sorry, I couldn't process your request."
+      const fullText = response.data.reply || "Sorry, I couldn't process your request."
       let currentIndex = 0
       
       const typeInterval = setInterval(() => {
