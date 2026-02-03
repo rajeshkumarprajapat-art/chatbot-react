@@ -54,7 +54,7 @@ export function Home() {
     setIsLoading(true)
 
     try {
-      const response = await axios.post('http://localhost:3000/api/chat', {
+      const response = await axios.post('https://chatbot-node-two.vercel.app/api/chat', {
         message: userInput
       })
 
